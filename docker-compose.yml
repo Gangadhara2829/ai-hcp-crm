@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: crm_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: healthcare_crm
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: crm_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgrespassword@db:5432/healthcare_crm
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/workspace
+      - /workspace/app/db/ # don't overwrite container-sqlite databases if any
+
+  frontend:
+    build: ./frontend
+    container_name: crm_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/workspace
+      - /workspace/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
